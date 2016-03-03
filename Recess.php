@@ -79,6 +79,8 @@ class Recess extends CI_Driver_Library
 
 		$this->_content_type = $this->_detected_content_type();
 		$this->_detected_hook();
+
+		self::$_ci_hooks_instance->call_hook('recess_construct');
 	}
 
 	//------------------------------------------------------
