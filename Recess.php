@@ -66,17 +66,7 @@ class Recess extends CI_Driver_Library
 		 */
 		self::$_ci_instance = &get_instance();
 		self::$_ci_instance->benchmark->mark('recess_construct');
-		/*
-		 * ------------------------------------------------------
-		 *  Codeigniter Hooks Class
-		 * ------------------------------------------------------
-		 *  config/hook.php
-		 *  $hook['recess_authorized'] = ...
-		 *  $hook['recess_override_display'] = ...
-		 *  $hook['recess_destruct'] = ...
-		 */
 		self::$_ci_hooks_instance = &load_class('Hooks', 'core');
-
 		self::$_ci_output_instance = &load_class('Output', 'core');
 
 		$this->_directory = self::$_ci_instance->router->fetch_directory();
@@ -85,9 +75,10 @@ class Recess extends CI_Driver_Library
 		$this->_enable_xss = (self::$_ci_instance->config->item('global_xss_filtering') === TRUE);
 
 		$this->assign->put('recess_input_methods', ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
-		$this->assign->put('recess_authorized', FALSE);
+		$this->assign->put('recess_authorized', TRUE);
 
 		$this->_content_type = $this->_detected_content_type();
+		$this->_detected_hook();
 	}
 
 	//------------------------------------------------------
@@ -466,8 +457,8 @@ class Recess extends CI_Driver_Library
 	 *
 	 * @return [type] [description]
 	 */
-	protected function _detected_content_type() {
-
+	protected function _detected_content_type()
+	{
 		$_supported = [
 			'JSON' => 'application/json',
 			// 'html' => 'text/html',
@@ -495,5 +486,86 @@ class Recess extends CI_Driver_Library
 		}
 
 		return $format_defined;
+	}
+
+	/**
+	 *
+	 * @return [type] [description]
+	 */
+	protected function _detected_hook()
+	{
+		if ( ! self::$_ci_hooks_instance->enabled )
+		{
+			return;
+		}
+
+		$recess_hooks = ['recess_authorized', 'recess_override_display', 'recess_destruct'];
+
+		foreach( $recess_hooks as $which )
+		{
+			if( isset(self::$_ci_hooks_instance->hooks[$which]) )
+			{
+				$data = self::$_ci_hooks_instance->hooks[$which];
+				$hook_instance = $this->_hook_instance($data);
+
+				$function = isset($data['function']) ? $data['function'] : FALSE;
+
+				if( $function === FALSE || $hook_instance === FALSE )
+				{
+					continue;
+				}
+
+				unset( self::$_ci_hooks_instance->hooks[$which] );
+				if( method_exists($hook_instance, $function) )
+				{
+					self::$_ci_hooks_instance->hooks[$which][] = array($hook_instance, $function);
+					continue;
+				}
+			}
+		}
+
+		return;
+	}
+
+	/**
+	 *
+	 * @param  [type] $data [description]
+	 * @return [type]       [description]
+	 */
+	protected static function _hook_instance( $data )
+	{
+		static $_classes = array();
+
+		if ( ! isset($data['filepath'], $data['filename'], $data['class']))
+		{
+			return FALSE;
+		}
+
+		$class = $data['class'];
+
+		if( isset( $_classes[ $class ] ) )
+		{
+			return $_classes[ $class ];
+		}
+
+		$filepath = $data['filepath'];
+		$filename = $data['filename'];
+
+		$filepath = APPPATH.$filepath.'/'.$filename;
+
+		if ( ! file_exists($filepath))
+		{
+			return FALSE;
+		}
+
+		class_exists($class, FALSE) OR require_once($filepath);
+
+		if ( ! class_exists($class, FALSE) )
+		{
+			return FALSE;
+		}
+
+		$_classes[$class] = new $class();
+		return $_classes[$class];
 	}
 }
