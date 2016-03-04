@@ -100,15 +100,18 @@ class Recess extends CI_Driver_Library
 	{
 		self::$_ci_hooks_instance->call_hook('recess_construct');
 
-		if( $this->_parse_route(array($method, 'index'), $arguments) === FALSE )
+		$orig_method = $method;
+		$method === 'index' OR $method = [$orig_method, 'index'];
+
+		if( $this->_parse_route($method, $arguments) === FALSE )
 		{
 			log_message('error', 'Not found');
 			show_404();
 		}
 
-		if( preg_match('/\_index/i', $this->_method) )
+		if( $orig_method !== 'index' && preg_match('/\_index/i', $this->_method) )
 		{
-			array_unshift($this->_arguments, $method);
+			array_unshift($this->_arguments, $orig_method);
 		}
 
 		$this->_is_authorized() && self::$_ci_hooks_instance->call_hook('recess_authorized');
@@ -308,6 +311,22 @@ class Recess extends CI_Driver_Library
 		}
 
 		return $this->_xss_clean( $array[$index], $xss_clean );
+	}
+
+	public function authorized_keys()
+	{
+		$authorized_keys = self::$_ci_instance->input->server('HTTP_AUTHORIZATION');
+		empty($authorized_keys) && $authorized_keys = self::$_ci_instance->input->get_request_header('Authorization');
+
+		if( $authorized_keys )
+		{
+			$ret = preg_split('/\s+/', $authorized_keys);
+			$authorized_keys = isset($ret[1]) ? $ret[1] : $ret[0];
+
+			return $authorized_keys;
+		}
+
+		return NULL;
 	}
 
 	//------------------------------------------------------
