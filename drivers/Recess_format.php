@@ -108,7 +108,7 @@ class Recess_format extends CI_Driver{
 	// function CSV($array = NULL, $delimiter = ',', $enclosure = '"') {
 
 	// 	// Use a threshold of 1 MB (1024 * 1024)
- //        $handle = fopen('php://temp/maxmemory:1048576', 'w');
+ //        $handle = fopen('php://temp/maxmemory:1048576', 'w')
  //        if ($handle === FALSE)
  //        {
  //            return NULL;

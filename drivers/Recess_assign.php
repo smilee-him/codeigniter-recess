@@ -1,8 +1,8 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Recess_assign extends CI_Driver{
-
+class Recess_assign extends CI_Driver
+{
 	// GLOBALLY VARIABLES
 	protected static $assigns = [];
 

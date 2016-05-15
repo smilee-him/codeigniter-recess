@@ -1,6 +1,11 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+/**
+ * @package 	CodeIgniter
+ * @category 	Driver
+ * @author 		SH Lee
+ */
 class Recess extends CI_Driver_Library
 {
 	protected $valid_drivers = ['assign', 'format'];
@@ -45,25 +50,22 @@ class Recess extends CI_Driver_Library
 	 */
 	protected $_arguments = array();
 
+	/**
+	 * ------------------------------------------------------
+	 *  Recess Class
+	 * ------------------------------------------------------
+	 * remap()
+	 * input()
+	 * input_stream()
+	 * input_method()
+	 * response()
+	 */
 	function __construct()
 	{
 		log_message('debug', "Recess driver initialized");
-		/*
-		 * ------------------------------------------------------
-		 *  Recess Class
-		 * ------------------------------------------------------
-		 * remap()
-		 * input()
-		 * input_stream()
-		 * input_method()
-		 * response()
-		 */
+
 		self::$_instance = &$this;
-		/*
-		 * ------------------------------------------------------
-		 *  Codeigniter Controller Class
-		 * ------------------------------------------------------
-		 */
+
 		self::$_ci_instance = &get_instance();
 		self::$_ci_instance->benchmark->mark('recess_construct');
 		self::$_ci_hooks_instance = &load_class('Hooks', 'core');
@@ -92,16 +94,29 @@ class Recess extends CI_Driver_Library
 
 	/**
 	 *
-	 * @param  [type] $method    [description]
-	 * @param  [type] $arguments [description]
-	 * @return [type]            [description]
+	 *
+	 * @access public
+	 * @param  string $method
+	 * @param  mixed $arguments
+	 * @return void
 	 */
 	public function remap( $method, $arguments = NULL )
 	{
+		/**
+		 * if running from shell?
+		 */
+		if( is_cli() )
+		{
+			method_exists(self::$_ci_instance, $method) &&
+			call_user_func_array([self::$_ci_instance, $method], $arguments );
+
+			return;
+		}
+
 		self::$_ci_hooks_instance->call_hook('recess_construct');
 
 		$orig_method = $method;
-		$method === 'index' OR $method = [$orig_method, 'index'];
+		$method === 'index' OR $method = array($orig_method, 'index');
 
 		if( $this->_parse_route($method, $arguments) === FALSE )
 		{
@@ -118,7 +133,7 @@ class Recess extends CI_Driver_Library
 
 		try
 		{
-			call_user_func_array([self::$_ci_instance, $this->_method], $this->_arguments );
+			call_user_func_array(array(self::$_ci_instance, $this->_method), $this->_arguments );
 		}
 		catch (Exception $e)
 		{
@@ -126,7 +141,7 @@ class Recess extends CI_Driver_Library
 		}
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
@@ -138,12 +153,14 @@ class Recess extends CI_Driver_Library
 	public function response($output, $http_status_code = NULL, $continue = FALSE)
 	{
 		$this->_ci_append_output($output);
+
 		if( $continue )
 		{
 			return;
 		}
 
-		if( is_callable( array( $this->format, $this->_content_type) ) === FALSE ) {
+		if( is_callable( array( $this->format, $this->_content_type) ) === FALSE )
+		{
 			show_error('format error');
 		}
 
@@ -186,7 +203,7 @@ class Recess extends CI_Driver_Library
 		exit;
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
@@ -204,7 +221,7 @@ class Recess extends CI_Driver_Library
 		return self::$_ci_instance->input->request_headers( $xss_clean );
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
@@ -248,7 +265,7 @@ class Recess extends CI_Driver_Library
 		return $this->array_search( $_input_stream, $index, $xss_clean );
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
@@ -279,11 +296,11 @@ class Recess extends CI_Driver_Library
 		log_message('error', 'Requested an unacceptable input_method: '. $_input_method);
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
-	 * @param  [type] &$array    [description]
+	 * @param  array &$array    [description]
 	 * @param  [type] $index     [description]
 	 * @param  [type] $xss_clean [description]
 	 * @return [type]            [description]
@@ -313,10 +330,13 @@ class Recess extends CI_Driver_Library
 		return $this->_xss_clean( $array[$index], $xss_clean );
 	}
 
+	//------------------------------
+
 	public function authorized_keys()
 	{
 		$authorized_keys = self::$_ci_instance->input->server('HTTP_AUTHORIZATION');
-		empty($authorized_keys) && $authorized_keys = self::$_ci_instance->input->get_request_header('Authorization');
+		empty($authorized_keys) &&
+		$authorized_keys = self::$_ci_instance->input->get_request_header('Authorization');
 
 		if( $authorized_keys )
 		{
@@ -329,19 +349,21 @@ class Recess extends CI_Driver_Library
 		return NULL;
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
-	 * [_parse_route description]
-	 * @param  [type] $method    [description]
-	 * @param  [type] $arguments [description]
-	 * @return [type]            [description]
+	 *
+	 *
+	 * @access protected
+	 * @param  string $method
+	 * @param  mixed $arguments
+	 * @return boolean
 	 */
 	protected function _parse_route( $method, $arguments = NULL )
 	{
-
 		static $_methods = NULL;
 
+		// Defined methods
 		if( NULL === $_methods )
 		{
 			$_methods = get_class_methods(self::$_ci_instance);
@@ -377,15 +399,17 @@ class Recess extends CI_Driver_Library
 		return FALSE;
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
+	 * recess_exclude_methods
 	 * recess_input_methods
 	 * recess_override_input
 	 * recess_authorized
 	 * recess_authorized_override_methods
-	 * @param  [string] $property
-	 * @return [mixed]
+	 *
+	 * @param  string $property
+	 * @return mixed
 	 */
 	protected function _ci_property($property)
 	{
@@ -394,13 +418,13 @@ class Recess extends CI_Driver_Library
 			return NULL;
 		}
 
-		isset(self::$_ci_instance->$property)
-			&& $output = self::$_ci_instance->$property;
+		isset(self::$_ci_instance->$property) &&
+		$value = self::$_ci_instance->$property;
 
-		return isset( $output ) ? $this->_xss_clean($output) : NULL;
+		return isset( $value ) ? $this->_xss_clean($value) : NULL;
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
@@ -412,7 +436,7 @@ class Recess extends CI_Driver_Library
 		return self::$_ci_output_instance->set_output($output);
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
@@ -423,7 +447,7 @@ class Recess extends CI_Driver_Library
 		return self::$_ci_output_instance->get_output();
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
@@ -437,17 +461,18 @@ class Recess extends CI_Driver_Library
 		return $this->_ci_set_output( array_merge( (array)$final_output, $output ) );
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
-	 * @return boolean [description]
+	 * @return boolean
 	 */
-	protected function _is_authorized() {
-
+	protected function _is_authorized()
+	{
 		$check_authorized = ($this->assign->get('recess_authorized') === TRUE);
 
-		is_bool( $this->_ci_property('recess_authorized') ) && $check_authorized = $this->_ci_property('recess_authorized');
+		is_bool( $this->_ci_property('recess_authorized') ) &&
+		$check_authorized = $this->_ci_property('recess_authorized');
 
 		if( $check_authorized === FALSE )
 		{
@@ -458,25 +483,28 @@ class Recess extends CI_Driver_Library
 		return (in_array( $this->_method, (array)$ignores ) === FALSE);
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
-	 * @param  [string] $value     [description]
-	 * @param  [boolean] $xss_clean [description]
-	 * @return [type]            [description]
+	 * @param  string $value
+	 * @param  boolean $xss_clean
+	 * @return mixed
 	 */
 	protected function _xss_clean($value, $xss_clean = NULL)
 	{
 		is_bool($xss_clean) OR $xss_clean = $this->_enable_xss;
-		return $xss_clean === TRUE ? self::$_ci_instance->security->xss_clean($value) : $value;
+
+		return $xss_clean === TRUE
+			? self::$_ci_instance->security->xss_clean($value)
+			: $value;
 	}
 
-	//------------------------------------------------------
+	//------------------------------
 
 	/**
 	 *
-	 * @return [type] [description]
+	 * @return string
 	 */
 	protected function _detected_content_type()
 	{
@@ -509,9 +537,11 @@ class Recess extends CI_Driver_Library
 		return $format_defined;
 	}
 
+	//------------------------------
+
 	/**
 	 *
-	 * @return [type] [description]
+	 * @return void
 	 */
 	protected function _detected_hook()
 	{
@@ -520,7 +550,11 @@ class Recess extends CI_Driver_Library
 			return;
 		}
 
-		$recess_hooks = ['recess_authorized', 'recess_override_display', 'recess_destruct'];
+		$recess_hooks = [
+			'recess_authorized',
+			'recess_override_display',
+			'recess_destruct'
+		];
 
 		foreach( $recess_hooks as $which )
 		{
@@ -537,6 +571,7 @@ class Recess extends CI_Driver_Library
 				}
 
 				unset( self::$_ci_hooks_instance->hooks[$which] );
+
 				if( method_exists($hook_instance, $function) )
 				{
 					self::$_ci_hooks_instance->hooks[$which][] = array($hook_instance, $function);
@@ -548,10 +583,12 @@ class Recess extends CI_Driver_Library
 		return;
 	}
 
+	//------------------------------
+
 	/**
 	 *
-	 * @param  [type] $data [description]
-	 * @return [type]       [description]
+	 * @param  array $data
+	 * @return mixed
 	 */
 	protected static function _hook_instance( $data )
 	{
