@@ -255,9 +255,9 @@ class Recess extends CI_Driver_Library
 			);
 		}
 
-		$input_stream_defined = $this->_ci_property('recess_override_input');
+		$recess_override_input = $this->_ci_property('recess_override_input');
 
-		foreach ( (array)$input_stream_defined as $key => $value)
+		foreach ( (array)$recess_override_input as $key => $value)
 		{
 			isset( $_input_stream[$key] ) OR $_input_stream[$key] = $value;
 		}
@@ -307,6 +307,12 @@ class Recess extends CI_Driver_Library
 	 */
 	public function array_search(&$array, $index = NULL, $xss_clean = NULL)
 	{
+		// if $array is not array?
+		if( is_array($array) === FALSE )
+		{
+			return $array;
+		}
+
 		// If $index is NULL, it means that the whole $array is requested
 		isset($index) OR $index = array_keys($array);
 
