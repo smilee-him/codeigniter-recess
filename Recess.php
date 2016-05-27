@@ -169,19 +169,26 @@ class Recess extends CI_Driver_Library
 		(int)$http_status_code > 0 OR $http_status_code = 200;
 		self::$_ci_output_instance->set_status_header( $http_status_code );
 
-		$response['request_body'] = [
-			'method' => $this->input_method(),
-			'uri' => self::$_ci_instance->uri->ruri_string(),
-			'segments' => $this->_arguments,
-			'params' => $this->input(),
-			'headers' => $this->header()
-		];
+		if( ENVIRONMENT === 'development' )
+		{
+			$response['request_body'] = [
+				'method' => $this->input_method(),
+				'uri' => self::$_ci_instance->uri->ruri_string(),
+				'segments' => $this->_arguments,
+				'params' => $this->input(),
+				'headers' => $this->header()
+			];
+		}
 
-		$response['response_body'] = $this->_ci_get_output();
+		$recess_output_name = $this->assign->get('recess_output_name');
+		empty($recess_output_name) && $recess_output_name = 'response_body';
+
+		$response[$recess_output_name] = $this->_ci_get_output();
 
 		self::$_ci_instance->benchmark->mark('recess_destruct');
 		$duration = (float)self::$_ci_instance->benchmark->elapsed_time('recess_construct', 'recess_destruct');
-		$response['duration'] = $duration;
+
+		isset( $response['request_body'] ) && $response['request_body']['duration'] = $duration;
 
 		$this->_ci_set_output($response);
 

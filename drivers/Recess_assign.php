@@ -4,7 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Recess_assign extends CI_Driver
 {
 	// GLOBALLY VARIABLES
-	protected static $assigns = [];
+	protected static $assigns = array();
 
 	public function get( $index, $xss_clean = NULL ) {
 		return $this->_parent->array_search( self::$assigns, $index, $xss_clean );
